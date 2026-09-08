@@ -19,8 +19,13 @@ export function createRoom(scene){
  label(door,'SHUNA',0,1.45,.17,.68,.22,'#e7e7ce','#788662');
  // Round window and crossbars.
  const win=group(room,2.02,2.01,-3.78);win.rotation.y=-.35;
- cylinder(win,0,0,0,.62,.62,.1,mat('#ffdf92',{emissive:'#edbf62',emissiveIntensity:.35})).rotation.x=Math.PI/2;
- torus(win,0,0,.08,.64,.085,'#ad875b');box(win,0,0,.12,.07,1.16,.08,'#a48157');box(win,0,0,.12,1.16,.07,.08,'#a48157');box(win,0,-.69,.2,1.48,.12,.45,wood);
+ const sky=mat('#ffdf92',{emissive:'#edbf62',emissiveIntensity:.35});
+ cylinder(win,0,0,0,.62,.62,.1,sky).rotation.x=Math.PI/2;
+ torus(win,0,0,.08,.64,.085,'#ad875b');
+ const sash=group(win,-.62,0,.14);
+ torus(sash,.62,0,0,.59,.035,'#ad875b');box(sash,.62,0,0,.07,1.16,.08,'#a48157');box(sash,.62,0,0,1.16,.07,.08,'#a48157');box(win,0,-.69,.2,1.48,.12,.45,wood);
+ win.traverse(o=>o.userData.furniture='window');
+ room.userData.window={sash,sky};
  const pot=cylinder(win,-.46,-.48,.21,.14,.1,.24,'#b77551');for(let i=0;i<5;i++){const l=ball(win,-.46+Math.sin(i*2)*.13,-.24+i*.025,.22,.07,.19,.055,'#6e8650');l.rotation.z=Math.sin(i)*.8;}
  // Hanging pendant.
  cylinder(room,0,3.51,-1.0,.018,.018,1.0,'#60573f');cylinder(room,0,3.03,-1,.14,.49,.3,'#67744f');ball(room,0,2.86,-1,.17,.1,.17,mat('#ffe5a3',{emissive:'#ffca67',emissiveIntensity:1.2}));

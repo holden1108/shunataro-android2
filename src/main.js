@@ -43,7 +43,15 @@ scene.add(new THREE.HemisphereLight('#fff6dc','#a1a889',2.35));
 const key=new THREE.DirectionalLight('#fff0d6',3.3);key.position.set(-3,9,6);key.castShadow=true;key.shadow.mapSize.set(isAndroid?1024:2048,isAndroid?1024:2048);Object.assign(key.shadow.camera,{left:-7,right:7,top:7,bottom:-7,near:.1,far:25});key.shadow.bias=-.0005;key.shadow.normalBias=.04;key.shadow.radius=4;scene.add(key);
 const fill=new THREE.DirectionalLight('#e4edce',1);fill.position.set(5,4,-3);scene.add(fill);
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.ShadowMaterial({opacity:.11}));ground.rotation.x=-Math.PI/2;ground.position.y=-.74;ground.receiveShadow=true;scene.add(ground);
-createRoom(scene);const furniture=createFurniture(scene);const dog=createDog(scene);
+const room=createRoom(scene);const furniture=createFurniture(scene);const dog=createDog(scene);
+const timeButton=document.createElement('button');timeButton.className='time-toggle';timeButton.textContent='☾ 夜にする';timeButton.setAttribute('aria-pressed','false');document.querySelector('.weather').replaceWith(timeButton);
+let night=false;
+timeButton.addEventListener('click',()=>{
+ night=!night;document.querySelector('.app').classList.toggle('night',night);timeButton.textContent=night?'☼ 昼にする':'☾ 夜にする';timeButton.setAttribute('aria-pressed',String(night));
+ key.intensity=night?.35:3.3;key.color.set(night?'#8a9ccb':'#fff0d6');fill.intensity=night?.25:1;
+ const ambient=scene.children.find(o=>o.isHemisphereLight);ambient.intensity=night?.65:2.35;
+ room.userData.window.sky.color.set(night?'#253553':'#ffdf92');room.userData.window.sky.emissive.set(night?'#435775':'#edbf62');
+});
 const status=document.querySelector('#status'),bubble=document.querySelector('#bubble');
 function updateUI(state){const a=ACTIONS.find(a=>a.id===state.action);status.textContent=state.phase==='walking'?`${a.label}の場所へ、てくてく`:state.phase==='acting'?a.status:'ほっと、ひと休み';bubble.textContent=state.phase==='walking'?'よいしょ、よいしょ。':state.phase==='acting'?a.thought:'次は、なにをしようかな。';document.querySelector('#auto').classList.toggle('active',state.auto);document.querySelector('#auto').setAttribute('aria-pressed',String(state.auto));document.querySelectorAll('[data-action]').forEach(b=>{const active=b.dataset.action===state.action&&state.phase!=='idle';b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});}
 const behavior=new Behavior(furniture,updateUI);behavior.choose('read',dog.root.position,false);
@@ -81,8 +89,8 @@ if(isAndroid){
 }
 let previous=performance.now(),time=0;const screen=new THREE.Vector3();
 renderer.setAnimationLoop(now=>{if(contextLost||document.hidden)return;if(isAndroid&&now-previous<32)return;const dt=Math.min((now-previous)/1000,.05);previous=now;if(!behavior.paused){time+=dt;behavior.update(dt,dog.root.position);const f=furniture.find(f=>f.id===behavior.action);const desired=behavior.phase==='walking'?behavior.heading:behavior.phase==='acting'?f.facing:0;if(Number.isFinite(desired)){const diff=Math.atan2(Math.sin(desired-dog.root.rotation.y),Math.cos(desired-dog.root.rotation.y));dog.root.rotation.y+=diff*Math.min(dt*7,1);}animateDog(dog,time,dt,behavior);}
+ if(!behavior.paused&&behavior.action==='window'&&behavior.phase==='acting')room.userData.window.sash.rotation.y=Math.min(behavior.elapsed/2,1)*1.15;
  const cooking=behavior.action==='cook'&&behavior.phase==='acting';steam.children.forEach((p,i)=>{const u=(time*.45+i/5)%1;p.position.set(-2.85+Math.sin(time+i)*.09,1.39+u*.75,-1.28);p.scale.setScalar(.14+u*.2);p.material.opacity=cooking?(1-u)*.25:0;});
  document.querySelector('#progress').style.width=`${behavior.progress*100}%`;controls.update();screen.copy(dog.root.position).add(new THREE.Vector3(0,2.08,0)).project(camera);bubble.style.left=`${(screen.x*.5+.5)*stage.clientWidth}px`;bubble.style.top=`${(-screen.y*.5+.5)*stage.clientHeight}px`;renderer.render(scene,camera);
 });
 window.addEventListener('pagehide',()=>{renderer.setAnimationLoop(null);resize.disconnect();controls.dispose();renderer.dispose();});
-

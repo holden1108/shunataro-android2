@@ -4,6 +4,8 @@ export const ACTIONS=[
  {id:'read',label:'読書',icon:'▤',status:'物語のつづきを読書中',thought:'この先、どうなるのかな。',duration:18},
  {id:'sleep',label:'お昼寝',icon:'☾',status:'すやすや、お昼寝中',thought:'すぅ… すぅ…',duration:22},
  {id:'clean',label:'お掃除',icon:'✧',status:'お部屋を、さっさっ',thought:'きれいになると、うれしいね。',duration:14},
+ {id:'window',label:'窓を開ける',icon:'▥',status:'窓を開けて、ひと息',thought:'風が気持ちいいね。',duration:8},
+ {id:'coffee',label:'コーヒー',icon:'☕',status:'コーヒーを、ひとくち',thought:'いい香り。ほっとするね。',duration:16},
 ];
 export class Behavior {
  constructor(furniture,onChange=()=>{},random=Math.random){this.furniture=furniture;this.onChange=onChange;this.random=random;this.action='read';this.phase='idle';this.elapsed=0;this.auto=true;this.paused=false;this.waypoints=[];}
@@ -11,7 +13,7 @@ export class Behavior {
   // Walk through the open center to avoid cutting across furniture.
   this.waypoints=[];if(Math.hypot(position.x-f.target[0],position.z-f.target[1])>2.4)this.waypoints.push([0,.35]);this.waypoints.push([...f.target]);this.onChange(this);return true;}
  setAuto(position){this.auto=true;this.next(position);}
- next(position){const choices=ACTIONS.filter(a=>a.id!==this.action);this.choose(choices[Math.floor(this.random()*choices.length)].id,position,false);}
+ next(position){const choices=ACTIONS.filter(a=>a.id!==this.action&&this.furniture.some(f=>f.id===a.id));if(choices.length)this.choose(choices[Math.floor(this.random()*choices.length)].id,position,false);}
  update(dt,position){if(this.paused)return;this.elapsed+=dt;
   if(this.phase==='idle'){if(this.auto)this.next(position);return;}
   if(this.phase==='walking'){const [x,z]=this.waypoints[0];const dx=x-position.x,dz=z-position.z,dist=Math.hypot(dx,dz);const step=dt*.83;

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {ball,box,cylinder,group,mat} from './world/primitives.js';
+import {ball,box,cylinder,torus,group,mat} from './world/primitives.js';
 
 export function createDog(scene){
  const root=group(scene,0,.13,1);const body=group(root);const salt=mat('#aaada5'),pepper=mat('#696e69'),light=mat('#e3e3d5'),nose=mat('#333b37',{roughness:.46});
@@ -27,6 +27,7 @@ export function createDog(scene){
  const meat=group(arms[1],0,-.34,.14);ball(meat,0,0,0,.13,.1,.18,'#a66943');cylinder(meat,0,0,.19,.035,.035,.2,'#e6d6b2').rotation.x=Math.PI/2;props.eat=meat;
  const spoon=group(arms[1],0,-.33,.17);cylinder(spoon,0,0,.07,.02,.02,.34,'#b58f5b').rotation.x=Math.PI/2;ball(spoon,0,0,.27,.066,.026,.095,'#b58f5b');props.cook=spoon;
  const broom=group(arms[1],0,-.3,.05);cylinder(broom,0,-.07,0,.024,.024,.85,'#b49465');box(broom,0,-.49,0,.3,.22,.12,'#c7ac6f');props.clean=broom;
+ const cup=group(arms[1],0,-.31,.1);cylinder(cup,0,0,0,.1,.075,.16,'#e9e0c8');cylinder(cup,0,.085,0,.084,.084,.009,'#54392b');torus(cup,.12,0,0,.06,.018,'#e9e0c8');props.coffee=cup;
  Object.values(props).forEach(p=>p.visible=false);
  return {root,body,head,ears,eyes,jaw,arms,legs,tail,props};
 }
@@ -46,6 +47,8 @@ export function animateDog(d,time,dt,state){
  Object.entries(d.props).forEach(([id,p])=>p.visible=id===action);
  d.jaw.scale.y=action==='eat'?1+Math.sin(time*12)*.12:1;
  if(action==='eat'){d.arms[1].rotation.x=-1.25+Math.sin(time*4)*.22;d.head.rotation.x=Math.sin(time*8)*.045;}
+ if(action==='coffee'){const sip=(Math.sin(time*1.6)+1)/2;d.arms[1].rotation.x=-.65-sip*.85;d.props.coffee.rotation.x=-d.arms[1].rotation.x-sip*.15;d.head.rotation.x=sip*.07;}
+ if(action==='window'){d.arms[1].rotation.x=-1.8+Math.sin(time*2)*.15;d.head.rotation.x=-.15;}
  if(action==='cook'){d.arms[1].rotation.x=-.85+Math.sin(time*3)*.25;d.arms[1].rotation.z=Math.sin(time*2)*.2;if(time%7>5)d.arms[1].rotation.x=-1.5;}
  if(action==='read'){
   d.arms.forEach((arm,i)=>{arm.rotation.x=-1.05;arm.rotation.z=i?-.18:.18;});
