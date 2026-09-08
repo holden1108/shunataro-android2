@@ -1,5 +1,10 @@
 plugins { id 'com.android.application' }
-
+// Convert before entering the Android DSL; avoid Groovy's ambiguous command syntax.
+def buildNumberText = providers.environmentVariable('GITHUB_RUN_NUMBER').getOrElse('1')
+def apkVersionCode = Integer.parseInt(buildNumberText)
+if (apkVersionCode < 1 || apkVersionCode > 2100000000) {
+    throw new GradleException('GITHUB_RUN_NUMBER must be between 1 and 2100000000')
+}
 android {
     namespace 'jp.shunataro.burrow'
     compileSdk 35
@@ -7,13 +12,12 @@ android {
         applicationId 'jp.shunataro.burrow'
         minSdk 26
         targetSdk 35
-        versionCode (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
-        versionName '1.0.' + (System.getenv('GITHUB_RUN_NUMBER') ?: '0')
+        versionCode = apkVersionCode
+        versionName = "1.0.${apkVersionCode}"
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
 }
-
 dependencies { implementation 'androidx.webkit:webkit:1.12.1' }
