@@ -16,11 +16,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
         with:
           version: 10.17.1
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: pnpm
@@ -31,30 +31,45 @@ jobs:
           pnpm test
           pnpm build
           node scripts/prepare-android.mjs
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
       - name: Install Android SDK
         run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: '8.11.1'
+          cache-provider: basic
       - name: Restore personal debug signing key
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.android/debug.keystore
           key: shunataro-debug-key-v1
       - name: Build and lint Android app
-        run: gradle -p android assembleDebug lintDebug --no-daemon
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle -p android assembleDebug lintDebug --no-daemon --stacktrace --console=plain 2>&1 | tee android-build.log
+      - name: Upload Android diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: android-build-diagnostics
+          path: |
+            android-build.log
+            android/app/build/reports/
+            android/build/reports/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Prepare APK download
         run: |
           mkdir -p apk
           cp android/app/build/outputs/apk/debug/app-debug.apk apk/shunataro.apk
           sha256sum apk/shunataro.apk > apk/SHA256SUMS.txt
       - name: Upload installable APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: shunataro-android-apk
           path: apk/
