@@ -10,7 +10,7 @@ export function createFurniture(scene){
   cylinder(g,0,.35,0,.12,.2,.7,'#96724e');cylinder(g,0,.74,0,.48,.48,.1,'#c4a379');
   cylinder(g,0,.81,0,.2,.2,.025,'#ded4b7');cylinder(g,0,.91,0,.12,.09,.17,'#e9e0c8');
   cylinder(g,0,1,0,.098,.098,.012,'#54392b');torus(g,.14,.92,0,.073,.022,'#e9e0c8');
- },[3.2,1.55],Math.PI);
+ },[3.2,1.55],0);
  const shelf=add('bookshelf','木の本棚',3.65,-1.8,g=>{
   g.rotation.y=-.95;
   box(g,0,1,-.19,1.12,1.9,.08,'#805c3c');
@@ -34,7 +34,7 @@ export function createFurniture(scene){
   cylinder(g,0,.68,0,.43,.43,.1,mat('#728d83',{metalness:.3}));torus(g,0,.74,0,.42,.045,'#90a89a').rotation.x=Math.PI/2;
   for(let i=0;i<24;i++){const a=i/24*Math.PI*2;box(g,Math.sin(a)*.43,.69,Math.cos(a)*.43,.034,.105,.034,'#607e73',.01);}
   ball(g,0,.77,0,.23,.08,.16,'#9f6541');ball(g,.18,.79,.1,.06,.035,.045,'#e3c599');
- },[.7,2.27],Math.PI*.76);
+ },[.7,2.27],0);
  add('read','クラシックな木の読書椅子',2.75,-.74,g=>{
   const walnut=mat('#a47b51',{map:woodTexture(),roughness:.58});
   const chair=group(g);chair.rotation.y=-.2;

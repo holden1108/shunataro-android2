@@ -6,7 +6,11 @@ export function createRoom(scene){
  cylinder(room,0,-.38,0,4.7,4.45,.65,'#96734d');cylinder(room,0,-.06,0,4.52,4.58,.13,'#d6b27d');
  for(let i=-10;i<=10;i++){const z=i*.42;const width=2*Math.sqrt(Math.max(0,4.42**2-z*z));if(width>.1)box(room,0,.025,z,width,.13,.404,wood,.035);}
  // The rear semicircle leaves the entire front open like a cutaway dollhouse.
- const wall=mesh(room,new THREE.CylinderGeometry(4.43,4.43,3.25,64,1,true,Math.PI/2,Math.PI),mat('#d9bc87',{side:THREE.DoubleSide}),0,1.57,0);
+ // Vertical wood grain, tiled around the curved wall without extra geometry.
+ const wallGrain=woodTexture();const grainContext=wallGrain.image.getContext('2d');
+ for(let y=0;y<256;y+=64){grainContext.fillStyle='rgba(76,48,27,.28)';grainContext.fillRect(0,y,512,2);grainContext.fillStyle='rgba(255,229,179,.3)';grainContext.fillRect(0,y+2,512,1);}
+ wallGrain.wrapS=wallGrain.wrapT=THREE.RepeatWrapping;wallGrain.center.set(.5,.5);wallGrain.rotation=Math.PI/2;wallGrain.repeat.set(1,5);wallGrain.needsUpdate=true;
+ const wall=mesh(room,new THREE.CylinderGeometry(4.43,4.43,3.25,64,1,true,Math.PI/2,Math.PI),mat('#e0bd8d',{map:wallGrain,roughness:.9,side:THREE.DoubleSide}),0,1.57,0);
  const rim=mesh(room,new THREE.CylinderGeometry(4.58,4.58,3.4,64,1,true,Math.PI/2,Math.PI),bark,0,1.58,0);rim.material.side=THREE.DoubleSide;
  for(let i=0;i<=48;i++){const a=Math.PI/2+i/48*Math.PI;ball(room,Math.sin(a)*4.49,3.28,Math.cos(a)*4.49,.27,.18,.27,i%3===0?'#7b8950':'#89985b');}
  for(let i=0;i<2;i++){const x=i?4.46:-4.46;box(room,x,1.57,0,.2,3.38,.22,'#a28055');}

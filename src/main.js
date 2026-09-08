@@ -88,7 +88,7 @@ if(isAndroid){
  shadow.rotation.x=-Math.PI/2;shadow.position.y=-.73;scene.add(shadow);
 }
 let previous=performance.now(),time=0;const screen=new THREE.Vector3();
-renderer.setAnimationLoop(now=>{if(contextLost||document.hidden)return;if(isAndroid&&now-previous<32)return;const dt=Math.min((now-previous)/1000,.05);previous=now;if(!behavior.paused){time+=dt;behavior.update(dt,dog.root.position);const f=furniture.find(f=>f.id===behavior.action);const desired=behavior.phase==='walking'?behavior.heading:behavior.phase==='acting'?f.facing:0;if(Number.isFinite(desired)){const diff=Math.atan2(Math.sin(desired-dog.root.rotation.y),Math.cos(desired-dog.root.rotation.y));dog.root.rotation.y+=diff*Math.min(dt*7,1);}animateDog(dog,time,dt,behavior);}
+renderer.setAnimationLoop(now=>{if(contextLost||document.hidden)return;if(isAndroid&&now-previous<32)return;const dt=Math.min((now-previous)/1000,.05);previous=now;if(!behavior.paused){time+=dt;behavior.update(dt,dog.root.position);const f=furniture.find(f=>f.id===behavior.action);const desired=behavior.phase==='walking'?behavior.heading:behavior.phase==='acting'?(['eat','coffee'].includes(behavior.action)?Math.atan2(camera.position.x-dog.root.position.x,camera.position.z-dog.root.position.z):f.facing):0;if(Number.isFinite(desired)){const diff=Math.atan2(Math.sin(desired-dog.root.rotation.y),Math.cos(desired-dog.root.rotation.y));dog.root.rotation.y+=diff*Math.min(dt*7,1);}animateDog(dog,time,dt,behavior);}
  if(!behavior.paused&&['window','closeWindow'].includes(behavior.action)&&behavior.phase==='acting'){
   const sash=room.userData.window.sash,target=behavior.action==='window'?1.15:0;
   sash.rotation.y+=Math.sign(target-sash.rotation.y)*Math.min(Math.abs(target-sash.rotation.y),dt*.7);
