@@ -89,8 +89,11 @@ if(isAndroid){
 }
 let previous=performance.now(),time=0;const screen=new THREE.Vector3();
 renderer.setAnimationLoop(now=>{if(contextLost||document.hidden)return;if(isAndroid&&now-previous<32)return;const dt=Math.min((now-previous)/1000,.05);previous=now;if(!behavior.paused){time+=dt;behavior.update(dt,dog.root.position);const f=furniture.find(f=>f.id===behavior.action);const desired=behavior.phase==='walking'?behavior.heading:behavior.phase==='acting'?f.facing:0;if(Number.isFinite(desired)){const diff=Math.atan2(Math.sin(desired-dog.root.rotation.y),Math.cos(desired-dog.root.rotation.y));dog.root.rotation.y+=diff*Math.min(dt*7,1);}animateDog(dog,time,dt,behavior);}
- if(!behavior.paused&&behavior.action==='window'&&behavior.phase==='acting')room.userData.window.sash.rotation.y=Math.min(behavior.elapsed/2,1)*1.15;
+ if(!behavior.paused&&['window','closeWindow'].includes(behavior.action)&&behavior.phase==='acting'){
+  const sash=room.userData.window.sash,target=behavior.action==='window'?1.15:0;
+  sash.rotation.y+=Math.sign(target-sash.rotation.y)*Math.min(Math.abs(target-sash.rotation.y),dt*.7);
+ }
  const cooking=behavior.action==='cook'&&behavior.phase==='acting';steam.children.forEach((p,i)=>{const u=(time*.45+i/5)%1;p.position.set(-2.85+Math.sin(time+i)*.09,1.39+u*.75,-1.28);p.scale.setScalar(.14+u*.2);p.material.opacity=cooking?(1-u)*.25:0;});
- document.querySelector('#progress').style.width=`${behavior.progress*100}%`;controls.update();screen.copy(dog.root.position).add(new THREE.Vector3(0,2.08,0)).project(camera);bubble.style.left=`${(screen.x*.5+.5)*stage.clientWidth}px`;bubble.style.top=`${(-screen.y*.5+.5)*stage.clientHeight}px`;renderer.render(scene,camera);
+ document.querySelector('#progress').style.width=`${behavior.progress*100}%`;controls.update();dog.head.getWorldPosition(screen);screen.y+=1.05;screen.project(camera);bubble.style.left=`${(screen.x*.5+.5)*stage.clientWidth}px`;bubble.style.top=`${(-screen.y*.5+.5)*stage.clientHeight-12}px`;renderer.render(scene,camera);
 });
 window.addEventListener('pagehide',()=>{renderer.setAnimationLoop(null);resize.disconnect();controls.dispose();renderer.dispose();});

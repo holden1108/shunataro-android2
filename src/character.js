@@ -48,7 +48,7 @@ export function animateDog(d,time,dt,state){
  d.jaw.scale.y=action==='eat'?1+Math.sin(time*12)*.12:1;
  if(action==='eat'){d.arms[1].rotation.x=-1.25+Math.sin(time*4)*.22;d.head.rotation.x=Math.sin(time*8)*.045;}
  if(action==='coffee'){const sip=(Math.sin(time*1.6)+1)/2;d.arms[1].rotation.x=-.65-sip*.85;d.props.coffee.rotation.x=-d.arms[1].rotation.x-sip*.15;d.head.rotation.x=sip*.07;}
- if(action==='window'){d.arms[1].rotation.x=-1.8+Math.sin(time*2)*.15;d.head.rotation.x=-.15;}
+ if(action==='window'||action==='closeWindow'){d.arms[1].rotation.x=-1.8+Math.sin(time*2)*.15;d.head.rotation.x=-.15;}
  if(action==='cook'){d.arms[1].rotation.x=-.85+Math.sin(time*3)*.25;d.arms[1].rotation.z=Math.sin(time*2)*.2;if(time%7>5)d.arms[1].rotation.x=-1.5;}
  if(action==='read'){
   d.arms.forEach((arm,i)=>{arm.rotation.x=-1.05;arm.rotation.z=i?-.18:.18;});

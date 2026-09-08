@@ -5,13 +5,14 @@ import {ball,box,cylinder,torus,group,mat,label,woodTexture} from './primitives.
 export function createFurniture(scene){
  const entries=[];const add=(id,name,x,z,build,target,facing=0)=>{const root=group(scene,x,.13,z);build(root);root.traverse(o=>o.userData.furniture=id);entries.push({id,name,root,target,facing});return root;};
  entries.push({id:'window',name:'丸い窓',target:[2.65,-2.5],facing:Math.PI});
+ entries.push({id:'closeWindow',name:'丸い窓を閉じる',target:[2.65,-2.5],facing:Math.PI});
  add('coffee','コーヒーテーブル',3.45,.75,g=>{
   cylinder(g,0,.35,0,.12,.2,.7,'#96724e');cylinder(g,0,.74,0,.48,.48,.1,'#c4a379');
   cylinder(g,0,.81,0,.2,.2,.025,'#ded4b7');cylinder(g,0,.91,0,.12,.09,.17,'#e9e0c8');
   cylinder(g,0,1,0,.098,.098,.012,'#54392b');torus(g,.14,.92,0,.073,.022,'#e9e0c8');
  },[3.2,1.55],Math.PI);
- const shelf=add('bookshelf','木の本棚',-3.45,-2.25,g=>{
-  g.rotation.y=.65;
+ const shelf=add('bookshelf','木の本棚',3.65,-1.8,g=>{
+  g.rotation.y=-.95;
   box(g,0,1,-.19,1.12,1.9,.08,'#805c3c');
   for(const x of [-.56,.56])box(g,x,1,0,.1,2,.48,'#a78255');
   for(let level=0;level<4;level++){

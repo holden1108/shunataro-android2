@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { createDog, animateDog } from '../src/character.js';
 import { Behavior } from '../src/behavior.js';
 
-for(const action of ['window','coffee'])test(`${action} reaches its furniture and finishes with valid character transforms`,()=>{
+for(const action of ['window','closeWindow','coffee'])test(`${action} reaches its furniture and finishes with valid character transforms`,()=>{
  const scene=new THREE.Scene(),dog=createDog(scene);
  const behavior=new Behavior([{id:action,target:[2,-2],facing:Math.PI}]);
  behavior.choose(action,dog.root.position);let acted=false;

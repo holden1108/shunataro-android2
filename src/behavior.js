@@ -6,6 +6,7 @@ export const ACTIONS=[
  {id:'clean',label:'お掃除',icon:'✧',status:'お部屋を、さっさっ',thought:'きれいになると、うれしいね。',duration:14},
  {id:'window',label:'窓を開ける',icon:'▥',status:'窓を開けて、ひと息',thought:'風が気持ちいいね。',duration:8},
  {id:'coffee',label:'コーヒー',icon:'☕',status:'コーヒーを、ひとくち',thought:'いい香り。ほっとするね。',duration:16},
+ {id:'closeWindow',label:'窓を閉じる',icon:'▣',status:'窓を、そっと閉めています',thought:'これで、お部屋もぽかぽか。',duration:8},
 ];
 export class Behavior {
  constructor(furniture,onChange=()=>{},random=Math.random){this.furniture=furniture;this.onChange=onChange;this.random=random;this.action='read';this.phase='idle';this.elapsed=0;this.auto=true;this.paused=false;this.waypoints=[];}
