@@ -7,6 +7,7 @@ import { createDog, animateDog } from './character.js';
 import { ACTIONS, Behavior } from './behavior.js';
 import { registerAgentTools } from './agent-tools.js';
 
+const isAndroid=navigator.userAgent.includes('Android');
 if(navigator.userAgent.includes('ShunataroAndroid'))document.documentElement.classList.add('native-android');
 
 const icon=(paths)=>`<svg viewBox="0 0 24 24" aria-hidden="true">${paths}</svg>`;
@@ -22,13 +23,19 @@ document.querySelector('#app').innerHTML=`<main class="app">
 
 const stage=document.querySelector('.stage');
 let renderer;
-try{renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});}catch(e){stage.insertAdjacentHTML('beforeend','<div class="error"><h2>3Dのお部屋を開けませんでした</h2><p>ブラウザのハードウェアアクセラレーションを有効にして、もう一度開いてください。</p></div>');throw e;}
-renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;stage.prepend(renderer.domElement);
+try{renderer=new THREE.WebGLRenderer({antialias:!isAndroid,alpha:true});}catch(e){stage.insertAdjacentHTML('beforeend','<div class="error"><h2>3Dのお部屋を開けませんでした</h2><p>ブラウザのハードウェアアクセラレーションを有効にして、もう一度開いてください。</p></div>');throw e;}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,isAndroid?1.25:2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;stage.prepend(renderer.domElement);
+let contextLost=false;
+const renderNotice=document.createElement('div');renderNotice.className='error hidden';renderNotice.setAttribute('role','alert');
+renderNotice.innerHTML='<h2>お部屋の描画を再開しています</h2><p>戻らない場合は、お部屋を開き直してください。</p><button type="button">お部屋を開き直す</button>';
+renderNotice.querySelector('button').addEventListener('click',()=>location.reload());stage.append(renderNotice);
+renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();contextLost=true;renderNotice.classList.remove('hidden');});
+renderer.domElement.addEventListener('webglcontextrestored',()=>{contextLost=false;previous=performance.now();renderNotice.classList.add('hidden');});
 const scene=new THREE.Scene();const camera=new THREE.PerspectiveCamera(36,1,.1,80);
 const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=9;controls.maxDistance=24;controls.minPolarAngle=.45;controls.maxPolarAngle=1.42;controls.minAzimuthAngle=-1.18;controls.maxAzimuthAngle=1.18;controls.target.set(0,1.0,0);
 function resetView(){const mobile=stage.clientWidth<650;camera.position.set(mobile?8.2:9, mobile?10.5:9.8,mobile?18.6:16.5);controls.target.set(0,1.15,0);controls.update();}resetView();
 scene.add(new THREE.HemisphereLight('#fff6dc','#a1a889',2.35));
-const key=new THREE.DirectionalLight('#fff0d6',3.3);key.position.set(-3,9,6);key.castShadow=true;key.shadow.mapSize.set(2048,2048);Object.assign(key.shadow.camera,{left:-7,right:7,top:7,bottom:-7,near:.1,far:25});key.shadow.bias=-.0005;key.shadow.normalBias=.04;key.shadow.radius=4;scene.add(key);
+const key=new THREE.DirectionalLight('#fff0d6',3.3);key.position.set(-3,9,6);key.castShadow=true;key.shadow.mapSize.set(isAndroid?1024:2048,isAndroid?1024:2048);Object.assign(key.shadow.camera,{left:-7,right:7,top:7,bottom:-7,near:.1,far:25});key.shadow.bias=-.0005;key.shadow.normalBias=.04;key.shadow.radius=4;scene.add(key);
 const fill=new THREE.DirectionalLight('#e4edce',1);fill.position.set(5,4,-3);scene.add(fill);
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(200,200),new THREE.ShadowMaterial({opacity:.11}));ground.rotation.x=-Math.PI/2;ground.position.y=-.74;ground.receiveShadow=true;scene.add(ground);
 createRoom(scene);const furniture=createFurniture(scene);const dog=createDog(scene);
@@ -52,10 +59,16 @@ renderer.domElement.addEventListener('pointercancel',()=>pointerStart=null);
 renderer.domElement.addEventListener('pointermove',e=>{renderer.domElement.style.cursor=hit(e)?'pointer':'grab';});
 const resize=new ResizeObserver(()=>{camera.aspect=stage.clientWidth/stage.clientHeight;camera.updateProjectionMatrix();renderer.setSize(stage.clientWidth,stage.clientHeight);});resize.observe(stage);
 // Steam is part of the activity layer, independent of kitchen geometry.
-const steam=new THREE.Group();scene.add(steam);for(let i=0;i<5;i++){const puff=new THREE.Mesh(new THREE.SphereGeometry(.07,12,8),new THREE.MeshBasicMaterial({color:'#fff9e6',transparent:true,opacity:.25,depthWrite:false}));steam.add(puff);}
+const steam=new THREE.Group();scene.add(steam);
+const steamCanvas=document.createElement('canvas');steamCanvas.width=steamCanvas.height=32;
+const steamContext=steamCanvas.getContext('2d');const gradient=steamContext.createRadialGradient(16,16,0,16,16,16);gradient.addColorStop(0,'rgba(255,249,230,.7)');gradient.addColorStop(1,'rgba(255,249,230,0)');steamContext.fillStyle=gradient;steamContext.fillRect(0,0,32,32);
+const steamTexture=new THREE.CanvasTexture(steamCanvas);steamTexture.colorSpace=THREE.SRGBColorSpace;
+for(let i=0;i<5;i++){const puff=new THREE.Sprite(new THREE.SpriteMaterial({map:steamTexture,transparent:true,opacity:0,depthWrite:false,toneMapped:false}));steam.add(puff);}
+// Compile held props before arrival, instead of first compiling during cooking.
+Object.values(dog.props).forEach(prop=>prop.visible=true);renderer.compile(scene,camera);Object.values(dog.props).forEach(prop=>prop.visible=false);
 let previous=performance.now(),time=0;const screen=new THREE.Vector3();
-renderer.setAnimationLoop(now=>{const dt=Math.min((now-previous)/1000,.05);previous=now;if(!behavior.paused){time+=dt;behavior.update(dt,dog.root.position);const f=furniture.find(f=>f.id===behavior.action);const desired=behavior.phase==='walking'?behavior.heading:behavior.phase==='acting'?f.facing:0;if(Number.isFinite(desired)){const diff=Math.atan2(Math.sin(desired-dog.root.rotation.y),Math.cos(desired-dog.root.rotation.y));dog.root.rotation.y+=diff*Math.min(dt*7,1);}animateDog(dog,time,dt,behavior);}
- steam.visible=behavior.action==='cook'&&behavior.phase==='acting';steam.children.forEach((p,i)=>{const u=(time*.45+i/5)%1;p.position.set(-2.85+Math.sin(time+i)*.09,1.39+u*.75,-1.28);p.scale.setScalar(.7+u*1.5);p.material.opacity=(1-u)*.25;});
+renderer.setAnimationLoop(now=>{if(contextLost)return;const dt=Math.min((now-previous)/1000,.05);previous=now;if(!behavior.paused){time+=dt;behavior.update(dt,dog.root.position);const f=furniture.find(f=>f.id===behavior.action);const desired=behavior.phase==='walking'?behavior.heading:behavior.phase==='acting'?f.facing:0;if(Number.isFinite(desired)){const diff=Math.atan2(Math.sin(desired-dog.root.rotation.y),Math.cos(desired-dog.root.rotation.y));dog.root.rotation.y+=diff*Math.min(dt*7,1);}animateDog(dog,time,dt,behavior);}
+ const cooking=behavior.action==='cook'&&behavior.phase==='acting';steam.children.forEach((p,i)=>{const u=(time*.45+i/5)%1;p.position.set(-2.85+Math.sin(time+i)*.09,1.39+u*.75,-1.28);p.scale.setScalar(.14+u*.2);p.material.opacity=cooking?(1-u)*.25:0;});
  document.querySelector('#progress').style.width=`${behavior.progress*100}%`;controls.update();screen.copy(dog.root.position).add(new THREE.Vector3(0,2.08,0)).project(camera);bubble.style.left=`${(screen.x*.5+.5)*stage.clientWidth}px`;bubble.style.top=`${(-screen.y*.5+.5)*stage.clientHeight}px`;renderer.render(scene,camera);
 });
 window.addEventListener('pagehide',()=>{renderer.setAnimationLoop(null);resize.disconnect();controls.dispose();renderer.dispose();});
