@@ -23,11 +23,16 @@ document.querySelector('#app').innerHTML=`<main class="app">
 
 const stage=document.querySelector('.stage');
 let renderer;
-try{renderer=new THREE.WebGLRenderer({antialias:!isAndroid,alpha:true});}catch(e){stage.insertAdjacentHTML('beforeend','<div class="error"><h2>3Dのお部屋を開けませんでした</h2><p>ブラウザのハードウェアアクセラレーションを有効にして、もう一度開いてください。</p></div>');throw e;}
-renderer.setPixelRatio(Math.min(window.devicePixelRatio,isAndroid?1.25:2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;stage.prepend(renderer.domElement);
+try{renderer=new THREE.WebGLRenderer({antialias:!isAndroid,alpha:true,powerPreference:isAndroid?'low-power':'default'});}catch(e){
+ const help=isAndroid?'Androidの最近使ったアプリからしゅな太郎を閉じて、もう一度起動してください。改善しない場合は端末を再起動してください。':'ブラウザのハードウェアアクセラレーションを有効にして、もう一度開いてください。';
+ stage.insertAdjacentHTML('beforeend',`<div class="error"><h2>3Dのお部屋を開けませんでした</h2><p>${help}</p></div>`);throw e;
+}
+// Avoid an extra full-scene shadow pass and large render targets on Android GPUs.
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,isAndroid?1:2));renderer.shadowMap.enabled=!isAndroid;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;stage.prepend(renderer.domElement);
 let contextLost=false;
 const renderNotice=document.createElement('div');renderNotice.className='error hidden';renderNotice.setAttribute('role','alert');
 renderNotice.innerHTML='<h2>お部屋の描画を再開しています</h2><p>戻らない場合は、お部屋を開き直してください。</p><button type="button">お部屋を開き直す</button>';
+if(isAndroid)renderNotice.querySelector('p').textContent='戻らない場合は、最近使ったアプリからしゅな太郎を閉じ、もう一度起動してください。';
 renderNotice.querySelector('button').addEventListener('click',()=>location.reload());stage.append(renderNotice);
 renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();contextLost=true;renderNotice.classList.remove('hidden');});
 renderer.domElement.addEventListener('webglcontextrestored',()=>{contextLost=false;previous=performance.now();renderNotice.classList.add('hidden');});
@@ -65,10 +70,19 @@ const steamContext=steamCanvas.getContext('2d');const gradient=steamContext.crea
 const steamTexture=new THREE.CanvasTexture(steamCanvas);steamTexture.colorSpace=THREE.SRGBColorSpace;
 for(let i=0;i<5;i++){const puff=new THREE.Sprite(new THREE.SpriteMaterial({map:steamTexture,transparent:true,opacity:0,depthWrite:false,toneMapped:false}));steam.add(puff);}
 // Compile held props before arrival, instead of first compiling during cooking.
-Object.values(dog.props).forEach(prop=>prop.visible=true);renderer.compile(scene,camera);Object.values(dog.props).forEach(prop=>prop.visible=false);
+if(!isAndroid){Object.values(dog.props).forEach(prop=>prop.visible=true);renderer.compile(scene,camera);Object.values(dog.props).forEach(prop=>prop.visible=false);}
+// A single soft contact shadow replaces the expensive realtime shadow map.
+if(isAndroid){
+ const canvas=document.createElement('canvas');canvas.width=canvas.height=64;
+ const ctx=canvas.getContext('2d'),shade=ctx.createRadialGradient(32,32,12,32,32,32);
+ shade.addColorStop(0,'rgba(70,57,38,.22)');shade.addColorStop(1,'rgba(70,57,38,0)');ctx.fillStyle=shade;ctx.fillRect(0,0,64,64);
+ const shadow=new THREE.Mesh(new THREE.PlaneGeometry(12,12),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(canvas),transparent:true,depthWrite:false}));
+ shadow.rotation.x=-Math.PI/2;shadow.position.y=-.73;scene.add(shadow);
+}
 let previous=performance.now(),time=0;const screen=new THREE.Vector3();
-renderer.setAnimationLoop(now=>{if(contextLost)return;const dt=Math.min((now-previous)/1000,.05);previous=now;if(!behavior.paused){time+=dt;behavior.update(dt,dog.root.position);const f=furniture.find(f=>f.id===behavior.action);const desired=behavior.phase==='walking'?behavior.heading:behavior.phase==='acting'?f.facing:0;if(Number.isFinite(desired)){const diff=Math.atan2(Math.sin(desired-dog.root.rotation.y),Math.cos(desired-dog.root.rotation.y));dog.root.rotation.y+=diff*Math.min(dt*7,1);}animateDog(dog,time,dt,behavior);}
+renderer.setAnimationLoop(now=>{if(contextLost||document.hidden)return;if(isAndroid&&now-previous<32)return;const dt=Math.min((now-previous)/1000,.05);previous=now;if(!behavior.paused){time+=dt;behavior.update(dt,dog.root.position);const f=furniture.find(f=>f.id===behavior.action);const desired=behavior.phase==='walking'?behavior.heading:behavior.phase==='acting'?f.facing:0;if(Number.isFinite(desired)){const diff=Math.atan2(Math.sin(desired-dog.root.rotation.y),Math.cos(desired-dog.root.rotation.y));dog.root.rotation.y+=diff*Math.min(dt*7,1);}animateDog(dog,time,dt,behavior);}
  const cooking=behavior.action==='cook'&&behavior.phase==='acting';steam.children.forEach((p,i)=>{const u=(time*.45+i/5)%1;p.position.set(-2.85+Math.sin(time+i)*.09,1.39+u*.75,-1.28);p.scale.setScalar(.14+u*.2);p.material.opacity=cooking?(1-u)*.25:0;});
  document.querySelector('#progress').style.width=`${behavior.progress*100}%`;controls.update();screen.copy(dog.root.position).add(new THREE.Vector3(0,2.08,0)).project(camera);bubble.style.left=`${(screen.x*.5+.5)*stage.clientWidth}px`;bubble.style.top=`${(-screen.y*.5+.5)*stage.clientHeight}px`;renderer.render(scene,camera);
 });
 window.addEventListener('pagehide',()=>{renderer.setAnimationLoop(null);resize.disconnect();controls.dispose();renderer.dispose();});
+
